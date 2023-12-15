@@ -33,21 +33,20 @@ void print_tar_header(const tar_header_t *header)
  * @param header
  * @return -1 if at the end of the archive
  */
-int next_header(int tar_fd, tar_header_t *header){
-    bytesRead = read(tar_fd, &header, sizeof(tar_header_t));
+long next_header(int tar_fd, tar_header_t *header){
+    ssize_t bytesRead = read(tar_fd, header, sizeof(tar_header_t));
     if (bytesRead < sizeof(tar_header_t)){
         return -2;
     }
     char *end;
-    long size = strtol(header.size,&end,10);
+    long size = strtol(header->size,&end,10);
     long skipblock = (size+BLOCKSIZE -1)/ BLOCKSIZE;
-    int err = lseek(tar_fd,skipblock*BLOCKSIZE,SEEK_CUR);
+    long err = lseek(tar_fd,skipblock*BLOCKSIZE,SEEK_CUR);
     return err;
 }
 
-int go_back_start(int tar_fd){
-    int err = lseek(tar_fd, 0, SEEK_SET);
-    return 0;
+long go_back_start(int tar_fd){
+    return lseek(tar_fd, 0, SEEK_SET);
 }
 
 
@@ -69,7 +68,17 @@ int go_back_start(int tar_fd){
  *         -3 if the archive contains a header with an invalid checksum value
  */
 int check_archive(int tar_fd) {
+    tar_header_t header;
+    go_back_start(tar_fd);
+    while(next_header(tar_fd, &header)>0){
+        if (strncmp(header.magic,TMAGIC, TMAGLEN)!=0 ){
+            return -1;
+        }
+        if(strncmp(header.version, TVERSION, TVERSLEN)!=0){
+            return -2;
+        }
 
+    }
 
 
     return 0;
@@ -86,9 +95,9 @@ int check_archive(int tar_fd) {
  */
 int exists(int tar_fd, char *path) {
     tar_header_t header;
-    ssize_t bytesRead;
+    go_back_start(tar_fd);
     while(1){
-        int err = next_header(tar_fd, header);
+        long err = next_header(tar_fd, &header);
         if (err == -2){
             break;
         } else if (err == -1){
