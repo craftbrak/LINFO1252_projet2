@@ -28,6 +28,32 @@ void print_tar_header(const tar_header_t *header)
 }
 
 /**
+ * Reads the next header in the archive
+ * @param tar_fd
+ * @param header
+ * @return -1 if at the end of the archive
+ */
+int next_header(int tar_fd, tar_header_t *header){
+    bytesRead = read(tar_fd, &header, sizeof(tar_header_t));
+    if (bytesRead < sizeof(tar_header_t)){
+        return -2;
+    }
+    char *end;
+    long size = strtol(header.size,&end,10);
+    long skipblock = (size+BLOCKSIZE -1)/ BLOCKSIZE;
+    int err = lseek(tar_fd,skipblock*BLOCKSIZE,SEEK_CUR);
+    return err;
+}
+
+int go_back_start(int tar_fd){
+    int err = lseek(tar_fd, 0, SEEK_SET);
+    return 0;
+}
+
+
+
+
+/**
  * Checks whether the archive is valid.
  *
  * Each non-null header of a valid archive has:
@@ -62,29 +88,20 @@ int exists(int tar_fd, char *path) {
     tar_header_t header;
     ssize_t bytesRead;
     while(1){
-        bytesRead=read(tar_fd, &header, sizeof(tar_header_t));
-        if (bytesRead < sizeof(tar_header_t)){
+        int err = next_header(tar_fd, header);
+        if (err == -2){
             break;
+        } else if (err == -1){
+            printf("Error from lseek");
+            return -1;
         }
         if (strncmp(header.name, path, sizeof(header.name))==0){
             return 1 ;
         }
-        char *end;
-        long size = strtol(header.size,&end,10);
-        long skipblock = (size+BLOCKSIZE -1)/ BLOCKSIZE;
-        lseek(tar_fd,skipblock * BLOCKSIZE,SEEK_CUR);
     }
     return 0;
 }
-/**
- * Reads the next header in the archive
- * @param tar_fd
- * @param header
- * @return -1 if at the end of the archive
- */
-int next_header(int tar_fd, tar_header_t *header){
-    return 0;
-}
+
 /**
  * Checks whether an entry exists in the archive and is a directory.
  *
