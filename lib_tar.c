@@ -1,6 +1,32 @@
 #include <string.h>
 #include "lib_tar.h"
 
+void print_tar_header(const tar_header_t *header)
+{
+    if (header == NULL) {
+        printf("Header is NULL\n");
+        return;
+    }
+
+    printf("Name: %s\n", header->name);
+    printf("Mode: %s\n", header->mode);
+    printf("UID: %s\n", header->uid);
+    printf("GID: %s\n", header->gid);
+    printf("Size: %s\n", header->size);
+    printf("Mtime: %s\n", header->mtime);
+    printf("Chksum: %s\n", header->chksum);
+    printf("Typeflag: %c\n", header->typeflag);
+    printf("Linkname: %s\n", header->linkname);
+    printf("Magic: %s\n", header->magic);
+    printf("Version: %s\n", header->version);
+    printf("Uname: %s\n", header->uname);
+    printf("Gname: %s\n", header->gname);
+    printf("Devmajor: %s\n", header->devmajor);
+    printf("Devminor: %s\n", header->devminor);
+    printf("Prefix: %s\n", header->prefix);
+    // Padding is not printed as it's usually not relevant for display
+}
+
 /**
  * Checks whether the archive is valid.
  *
@@ -36,7 +62,7 @@ int exists(int tar_fd, char *path) {
     tar_header_t header;
     ssize_t bytesRead;
     while(1){
-        bytesRead=read(tar_fd, &header, sizeof(struct posix_header));
+        bytesRead=read(tar_fd, &header, sizeof(tar_header_t));
         if (bytesRead < sizeof(tar_header_t)){
             break;
         }
@@ -46,7 +72,7 @@ int exists(int tar_fd, char *path) {
         char *end;
         long size = strtol(header.size,&end,10);
         long skipblock = (size+BLOCKSIZE -1)/ BLOCKSIZE;
-        lseek(tar_fd,skipblock + BLOCKSIZE,SEEK_CUR);
+        lseek(tar_fd,skipblock * BLOCKSIZE,SEEK_CUR);
     }
     return 0;
 }
