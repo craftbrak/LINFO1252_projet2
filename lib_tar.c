@@ -1,3 +1,4 @@
+#include <string.h>
 #include "lib_tar.h"
 
 /**
@@ -16,6 +17,9 @@
  *         -3 if the archive contains a header with an invalid checksum value
  */
 int check_archive(int tar_fd) {
+
+
+
     return 0;
 }
 
@@ -29,9 +33,32 @@ int check_archive(int tar_fd) {
  *         any other value otherwise.
  */
 int exists(int tar_fd, char *path) {
+    tar_header_t header;
+    ssize_t bytesRead;
+    while(1){
+        bytesRead=read(tar_fd, &header, sizeof(struct posix_header));
+        if (bytesRead < sizeof(tar_header_t)){
+            break;
+        }
+        if (strncmp(header.name, path, sizeof(header.name))==0){
+            return 1 ;
+        }
+        char *end;
+        long size = strtol(header.size,&end,10);
+        long skipblock = (size+BLOCKSIZE -1)/ BLOCKSIZE;
+        lseek(tar_fd,skipblock + BLOCKSIZE,SEEK_CUR);
+    }
     return 0;
 }
-
+/**
+ * Reads the next header in the archive
+ * @param tar_fd
+ * @param header
+ * @return -1 if at the end of the archive
+ */
+int next_header(int tar_fd, tar_header_t *header){
+    return 0;
+}
 /**
  * Checks whether an entry exists in the archive and is a directory.
  *
