@@ -68,25 +68,25 @@ unsigned int calculate_tar_checksum(const struct posix_header *header) {
  *
  * @param tar_fd A file descriptor pointing to the start of a valid tar archive file.
  * @param path A path to an entry in the archive.
+ * @param header A out argument that will be set to the header corresponding to the entry if it exists
  *
  * @return zero if no entry at the given path exists in the archive,
  *         1 file,
  *         2 directory,
  *         3 symlink.
  */
-int get_header_type(int tar_fd, char *path){
-    tar_header_t header;
+int get_header_type(int tar_fd, char *path, tar_header_t *header){
     go_back_start(tar_fd);
     while(1){
-        long err = next_header(tar_fd, &header);
+        long err = next_header(tar_fd, header);
         if (err == -2){
             break;
         } else if (err == -1){
             printf("Error from lseek");
             return -1;
         }
-        if (strncmp(header.name, path, sizeof(header.name))==0){
-            switch (header.typeflag) {
+        if (strncmp(header->name, path, sizeof(header->name))==0){
+            switch (header->typeflag) {
                 case DIRTYPE:
                     return 2;
                 case SYMTYPE:
@@ -148,7 +148,8 @@ int check_archive(int tar_fd) {
  *         any other value otherwise.
  */
 int exists(int tar_fd, char *path) {
-    return get_header_type(tar_fd, path);
+    tar_header_t header;
+    return get_header_type(tar_fd, path, &header);
 }
 
 /**
@@ -161,7 +162,8 @@ int exists(int tar_fd, char *path) {
  *         any other value otherwise.
  */
 int is_dir(int tar_fd, char *path) {
-    if (get_header_type(tar_fd, path)== 2 ) return 1;
+    tar_header_t header;
+    if (get_header_type(tar_fd, path,&header)== 2 ) return 1;
     return 0;
 }
 
@@ -175,7 +177,8 @@ int is_dir(int tar_fd, char *path) {
  *         any other value otherwise.
  */
 int is_file(int tar_fd, char *path) {
-    if (get_header_type(tar_fd, path)== 1 ) return 1;
+    tar_header_t header;
+    if (get_header_type(tar_fd, path,&header)== 1 ) return 1;
     return 0;
 }
 
@@ -188,7 +191,8 @@ int is_file(int tar_fd, char *path) {
  *         any other value otherwise.
  */
 int is_symlink(int tar_fd, char *path) {
-    if (get_header_type(tar_fd, path)== 3 ) return 1;
+    tar_header_t header;
+    if (get_header_type(tar_fd, path,&header)== 3 ) return 1;
     return 0;
 }
 
