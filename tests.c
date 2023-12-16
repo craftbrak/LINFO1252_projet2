@@ -40,10 +40,25 @@ void test_exists(int tar_fd) {
     printf("Test file does not exist: %s\n", result ? "FAIL" : "PASS");
 
     // Add more tests as needed
-
-    close(tar_fd); // Close the file descriptor
 }
+void test_check_archive(){
+//TODO: Add test
+}
+void test_is_dir(int tar_fd){
+    int result = is_dir(tar_fd, "dir1");
+    printf("Test dir exists: %s\n", result ? "PASS" : "FAIL");
 
+    result = is_dir(tar_fd, "dir2");
+    printf("Test dir exists: %s\n", result ? "PASS" : "FAIL");
+
+    result = is_dir(tar_fd, "dir1");
+    printf("Test dir exists: %s\n", result ? "PASS" : "FAIL");
+
+    // Test case: File does not exist
+    result = is_dir(tar_fd, "nonexistent_file.txt");
+    printf("Test dir does not exist: %s\n", result ? "FAIL" : "PASS");
+
+}
 int main(int argc, char **argv) {
     if (argc < 2) {
         printf("Usage: %s tar_file\n", argv[0]);
@@ -56,6 +71,7 @@ int main(int argc, char **argv) {
         return -1;
     }
     test_exists(fd);
+    test_is_dir(fd);
     int ret = check_archive(fd);
     printf("check_archive returned %d\n", ret);
 
