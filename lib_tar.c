@@ -134,6 +134,20 @@ int exists(int tar_fd, char *path) {
  *         any other value otherwise.
  */
 int is_dir(int tar_fd, char *path) {
+    go_back_start(tar_fd);
+    tar_header_t header;
+    while(1){
+        long err = next_header(tar_fd, &header);
+        if (err == -2){
+            break;
+        } else if (err == -1){
+            printf("Error from lseek");
+            return -1;
+        }
+        if (strncmp(header.name, path, sizeof(header.name))==0 && header.typeflag == DIRTYPE){
+            return 1 ;
+        }
+    }
     return 0;
 }
 
