@@ -332,16 +332,53 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
     // attention a update no_entries dans tous les cas (pas oublier de le mettre a 0 quand on retourne 0)
     // attention ajouter les / pour les folders (ATTENTION le / n'est pas compris dans le linkname d'un symlink dons l'ajouter si besoin -> avec strcat?) mais ne pas ajouter les sous-dossier a la suite
 
-    int type = get_header_type(tar_fd, path);
-    char* directory; //need for a malloc??
-    if (type < 2) {
-        *no_entries = 0;
+    tar_header_t header;
+    int type = get_header_type(tar_fd, path, &header);
+    char* directory = (char*) malloc(101* sizeof(char));
+    size_t entries_length = *no_entries;
+    *no_entries = 0;
+    if (type <= 1) {
         return 0;
     } else if (type == 3) {
-        //we have a simlink
+        //we have a symlink
+        //check if the symlink points to a directory or a file...
+        tar_header_t header_bis;
+        directory = header.linkname;
+        if (get_header_type(tar_fd, directory, &header_bis)<= 2) {
+            return 0;
+        }
+        strcat(directory, "/");
+    } else {
+        directory = header.name;
     }
 
-    return 0;
+    go_back_start(tar_fd);
+    tar_header_t  header_sub;
+    //for loop that get all the entries of the directory ??
+    while(*no_entries <= entries_length){
+        long err = next_header(tar_fd, &header_sub);
+        if (err == -2){
+            break;
+        } else if (err == -1){
+            printf("Error from lseek");
+            return -1;
+        }
+
+        if (strncmp(header_sub.name, directory, strlen(directory))==0){
+            const char* remaining_path = header_sub.name + strlen(directory);
+            if (strchr(remaining_path, '/')== NULL){
+                entries[*no_entries] = strdup(header_sub.name);
+                if (entries[*no_entries] == NULL){
+                    printf("Error of strdup");
+                    return 0;
+                }
+                (*no_entries)++;
+            }
+        }
+
+    }
+
+    return 1;
 }
 
 /**
