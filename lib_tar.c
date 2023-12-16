@@ -143,21 +143,7 @@ int check_archive(int tar_fd) {
  *         any other value otherwise.
  */
 int exists(int tar_fd, char *path) {
-    tar_header_t header;
-    go_back_start(tar_fd);
-    while(1){
-        long err = next_header(tar_fd, &header);
-        if (err == -2){
-            break;
-        } else if (err == -1){
-            printf("Error from lseek");
-            return -1;
-        }
-        if (strncmp(header.name, path, sizeof(header.name))==0){
-            return 1 ;
-        }
-    }
-    return 0;
+    return get_header_type(tar_fd, path);
 }
 
 /**
@@ -170,20 +156,7 @@ int exists(int tar_fd, char *path) {
  *         any other value otherwise.
  */
 int is_dir(int tar_fd, char *path) {
-    go_back_start(tar_fd);
-    tar_header_t header;
-    while(1){
-        long err = next_header(tar_fd, &header);
-        if (err == -2){
-            break;
-        } else if (err == -1){
-            printf("Error from lseek");
-            return -1;
-        }
-        if (strncmp(header.name, path, sizeof(header.name))==0 && header.typeflag == DIRTYPE){
-            return 1 ;
-        }
-    }
+    if (get_header_type(tar_fd, path)== 2 ) return 1;
     return 0;
 }
 
@@ -197,6 +170,7 @@ int is_dir(int tar_fd, char *path) {
  *         any other value otherwise.
  */
 int is_file(int tar_fd, char *path) {
+    if (get_header_type(tar_fd, path)== 1 ) return 1;
     return 0;
 }
 
@@ -209,6 +183,7 @@ int is_file(int tar_fd, char *path) {
  *         any other value otherwise.
  */
 int is_symlink(int tar_fd, char *path) {
+    if (get_header_type(tar_fd, path)== 3 ) return 1;
     return 0;
 }
 
