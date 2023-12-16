@@ -79,8 +79,6 @@ int check_archive(int tar_fd) {
         }
 
     }
-
-
     return 0;
 }
 
@@ -173,6 +171,13 @@ int is_symlink(int tar_fd, char *path) {
  *         any other value otherwise.
  */
 int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
+    // ATTENTION avant toute chose faire le check que le chemin est bien vers un dir (si chemin vers un fichier/symlink qui pointe vers un fichier: return 0)
+    // si le repertoir a lister est un symlink: le nom du repertoire a inclure est celui du chemin reel et pas celui du simlink (ex sym_a->a, inclure a/nom et pas sym_a/nom)
+    // lire un simlink: trouver le nom dans le champs linkname du header du symlink (on ne resoud pas les symlinks a l'interieur du dossier)
+    // pas oublier d'update le buffer entries (avec le chemin complet) ET le size_t no_entries
+    // -> si no_entries est plus petit que le nombre d'entries du directory, lister les no_entries premiers elements (dans l'ordre des headers)
+    // attention a update no_entries dans tous les cas (pas oublier de le mettre a 0 quand on retourne 0)
+    // attention ajouter les / pour les folders (ATTENTION le / n'est pas compris dans le linkname d'un symlink dons l'ajouter si besoin -> avec strcat?) mais ne pas ajouter les sous-dossier a la suite
     return 0;
 }
 
