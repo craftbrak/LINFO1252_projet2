@@ -64,6 +64,42 @@ unsigned int calculate_tar_checksum(const struct posix_header *header) {
 
     return checksum;
 }
+/**
+ * Returns the type of a file if it exists.
+ *
+ * @param tar_fd A file descriptor pointing to the start of a valid tar archive file.
+ * @param path A path to an entry in the archive.
+ *
+ * @return zero if no entry at the given path exists in the archive,
+ *         1 file,
+ *         2 directory,
+ *         3 symlink.
+ */
+int get_header_type(int tar_fd, char *path){
+    tar_header_t header;
+    go_back_start(tar_fd);
+    while(1){
+        long err = next_header(tar_fd, &header);
+        if (err == -2){
+            break;
+        } else if (err == -1){
+            printf("Error from lseek");
+            return -1;
+        }
+        if (strncmp(header.name, path, sizeof(header.name))==0){
+            switch (header.typeflag) {
+                case DIRTYPE:
+                    return 2;
+                case SYMTYPE:
+                    return 3;
+                default:
+                    return 1;
+            }
+        }
+    }
+    return 0;
+}
+
 
 /**
  * Checks whether the archive is valid.
