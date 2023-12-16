@@ -90,17 +90,11 @@ int check_archive(int tar_fd) {
         if(strncmp(header.version, TVERSION, TVERSLEN)!=0){
             return -2;
         }
-        unsigned int calculated_checksum = calculate_tar_checksum(&header);
 
-        // Convert the chksum field to an integer for comparison
-        unsigned int stored_checksum = (unsigned int)strtol(header.chksum,NULL,8);
-        if (calculated_checksum != stored_checksum) {
-            // Handle checksum mismatch
-            return -3; // For example, as per your documentation
-        }
     }
 
-    return 1;
+
+    return 0;
 }
 
 /**
@@ -140,20 +134,6 @@ int exists(int tar_fd, char *path) {
  *         any other value otherwise.
  */
 int is_dir(int tar_fd, char *path) {
-    go_back_start(tar_fd);
-    tar_header_t header;
-    while(1){
-        long err = next_header(tar_fd, &header);
-        if (err == -2){
-            break;
-        } else if (err == -1){
-            printf("Error from lseek");
-            return -1;
-        }
-        if (strncmp(header.name, path, sizeof(header.name))==0 && header.typeflag == DIRTYPE){
-            return 1 ;
-        }
-    }
     return 0;
 }
 
