@@ -13,7 +13,6 @@
  * Note: If the header pointer is NULL, the function prints a warning message
  *       and returns without printing any further information.
  */
-
 void print_tar_header(const tar_header_t *header)
 {
     if (header == NULL) {
@@ -151,6 +150,19 @@ int seek_to_file_data(int tar_fd, const tar_header_t *header, size_t offset) {
     return 0;
 }
 
+/**
+ * Calculates the checksum for a TAR header block.
+ *
+ * This function computes the checksum for a 512-byte TAR header block.
+ * The checksum is the sum of all bytes in the header, with the 8-byte
+ * chksum field (bytes 148 to 155) treated as if filled with spaces (ASCII 32).
+ *
+ * @param header Pointer to a posix_header structure representing the TAR header.
+ * @return The calculated checksum as an unsigned integer.
+ *
+ * Note: The function assumes the header is 512 bytes and formatted according to
+ *       TAR specifications.
+ */
 unsigned int calculate_tar_checksum(const struct posix_header *header) {
     const unsigned char *bytes = (const unsigned char *)header;
     unsigned int checksum = 0;
