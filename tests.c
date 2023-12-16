@@ -23,6 +23,20 @@ void debug_dump(const uint8_t *bytes, size_t len) {
         printf("\n");
     }
 }
+void test_print_tar_header(int fd);
+void test_next_header(int fd);
+void test_go_back_start(int fd);
+void test_resolve_symlink(int fd);
+void test_seek_to_file_data(int fd);
+void test_calculate_tar_checksum(int fd);
+void test_get_header_type(int fd);
+void test_check_archive(int fd);
+void test_exists(int fd);
+void test_is_dir(int fd);
+void test_is_file(int fd);
+void test_is_symlink(int fd);
+void test_list(int fd);
+void test_read_file(int fd);
 
 void test_exists(int tar_fd) {
     // Test case: File exists
