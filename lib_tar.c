@@ -177,6 +177,7 @@ unsigned int calculate_tar_checksum(const struct posix_header *header) {
 
     return checksum;
 }
+
 /**
  * Returns the type of a file if it exists.
  *
@@ -214,7 +215,6 @@ int get_header_type(int tar_fd, char *path, tar_header_t *header){
     }
     return 0;
 }
-
 
 /**
  * Checks whether the archive is valid.

@@ -46,6 +46,106 @@ typedef struct posix_header
 #define TAR_INT(char_ptr) strtol(char_ptr, NULL, 8)
 
 /**
+ * Prints the contents of a TAR header to standard output.
+ *
+ * This function displays the information contained within a TAR header,
+ * such as file name, mode, user/group IDs, size, modification time, checksum,
+ * type flag, link name, and other metadata. It is useful for debugging or
+ * inspecting TAR file contents.
+ *
+ * @param header Pointer to a tar_header_t structure containing the TAR header to print.
+ *
+ * Note: If the header pointer is NULL, the function prints a warning message
+ *       and returns without printing any further information.
+ */
+void print_tar_header(const tar_header_t *header);
+
+/**
+ * Reads the next header in a TAR archive and advances past the corresponding file data.
+ *
+ * @param tar_fd File descriptor for the TAR archive.
+ * @param header Pointer to store the read header.
+ *
+ * @return Returns the position in the archive after the current file's data. Returns -2
+ *         if a complete header cannot be read, indicating the end of the archive or an
+ *         error. Returns -1 on seek errors.
+ *
+ * Note: Assumes proper definition of tar_header_t and BLOCKSIZE. The file descriptor
+ *       should be at the start of a header.
+ */
+long next_header(int tar_fd, tar_header_t *header);
+/**
+ * Resets the file descriptor to the start of the TAR archive.
+ *
+ * @param tar_fd File descriptor for the TAR archive.
+ * @return The offset from the start of the file if successful, or -1 on error.
+ */
+long go_back_start(int tar_fd);
+/**
+ * Resolves a symbolic link to its target within a TAR archive.
+ *
+ * This function searches through the TAR archive for the specified symbolic link
+ * and, upon finding it, provides the path to which the symbolic link points.
+ * It assumes that symlinks are not nested, meaning a symlink directly points
+ * to a regular file and not to another symlink.
+ *
+ * @param tar_fd A file descriptor pointing to the start of a valid tar archive file.
+ * @param symlink_path The path of the symbolic link within the tar archive to be resolved.
+ * @param resolved_path A buffer where the resolved path will be stored. The buffer
+ *                      should be large enough to hold the maximum possible path.
+ *                      The resolved path is null-terminated.
+ *
+ * @return Returns 0 if the symlink was successfully resolved, -1 if the symlink
+ *         is not found or if an error occurs during the resolution process.
+ *
+ * Note: The function does not handle nested symlinks. If the symlink points to
+ * another symlink, this function will not resolve it further. Also, the function
+ * scans the archive linearly, which may be inefficient for large archives.
+ */
+int resolve_symlink(int tar_fd, const char *symlink_path, char *resolved_path);
+
+/**
+ * Seeks to the start of the file data in the TAR archive.
+ *
+ * @param tar_fd A file descriptor pointing to the start of a valid tar archive file.
+ * @param header The header of the file whose data we want to seek to.
+ * @param offset Offset from the start of the file data.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+int seek_to_file_data(int tar_fd, const tar_header_t *header, size_t offset);
+
+/**
+ * Calculates the checksum for a TAR header block.
+ *
+ * This function computes the checksum for a 512-byte TAR header block.
+ * The checksum is the sum of all bytes in the header, with the 8-byte
+ * chksum field (bytes 148 to 155) treated as if filled with spaces (ASCII 32).
+ *
+ * @param header Pointer to a posix_header structure representing the TAR header.
+ * @return The calculated checksum as an unsigned integer.
+ *
+ * Note: The function assumes the header is 512 bytes and formatted according to
+ *       TAR specifications.
+ */
+unsigned int calculate_tar_checksum(const struct posix_header *header);
+
+/**
+ * Returns the type of a file if it exists.
+ *
+ * @param tar_fd A file descriptor pointing to the start of a valid tar archive file.
+ * @param path A path to an entry in the archive.
+ * @param header A out argument that will be set to the header corresponding to the entry if it exists
+ *
+ * @return zero if no entry at the given path exists in the archive,
+ *         1 file,
+ *         2 directory,
+ *         3 symlink.
+ */
+int get_header_type(int tar_fd, char *path, tar_header_t *header);
+
+
+/**
  * Checks whether the archive is valid.
  *
  * Each non-null header of a valid archive has:
