@@ -1,5 +1,18 @@
 #include <string.h>
 #include "lib_tar.h"
+/**
+ * Prints the contents of a TAR header to standard output.
+ *
+ * This function displays the information contained within a TAR header,
+ * such as file name, mode, user/group IDs, size, modification time, checksum,
+ * type flag, link name, and other metadata. It is useful for debugging or
+ * inspecting TAR file contents.
+ *
+ * @param header Pointer to a tar_header_t structure containing the TAR header to print.
+ *
+ * Note: If the header pointer is NULL, the function prints a warning message
+ *       and returns without printing any further information.
+ */
 
 void print_tar_header(const tar_header_t *header)
 {
@@ -28,10 +41,17 @@ void print_tar_header(const tar_header_t *header)
 }
 
 /**
- * Reads the next header in the archive
- * @param tar_fd
- * @param header
- * @return -1 if at the end of the archive
+ * Reads the next header in a TAR archive and advances past the corresponding file data.
+ *
+ * @param tar_fd File descriptor for the TAR archive.
+ * @param header Pointer to store the read header.
+ *
+ * @return Returns the position in the archive after the current file's data. Returns -2
+ *         if a complete header cannot be read, indicating the end of the archive or an
+ *         error. Returns -1 on seek errors.
+ *
+ * Note: Assumes proper definition of tar_header_t and BLOCKSIZE. The file descriptor
+ *       should be at the start of a header.
  */
 long next_header(int tar_fd, tar_header_t *header){
     ssize_t bytesRead = read(tar_fd, header, sizeof(tar_header_t));
@@ -44,9 +64,91 @@ long next_header(int tar_fd, tar_header_t *header){
     long err = lseek(tar_fd,skipblock*BLOCKSIZE,SEEK_CUR);
     return err;
 }
-
+/**
+ * Resets the file descriptor to the start of the TAR archive.
+ *
+ * @param tar_fd File descriptor for the TAR archive.
+ * @return The offset from the start of the file if successful, or -1 on error.
+ */
 long go_back_start(int tar_fd){
     return lseek(tar_fd, 0, SEEK_SET);
+}
+/**
+ * Resolves a symbolic link to its target within a TAR archive.
+ *
+ * This function searches through the TAR archive for the specified symbolic link
+ * and, upon finding it, provides the path to which the symbolic link points.
+ * It assumes that symlinks are not nested, meaning a symlink directly points
+ * to a regular file and not to another symlink.
+ *
+ * @param tar_fd A file descriptor pointing to the start of a valid tar archive file.
+ * @param symlink_path The path of the symbolic link within the tar archive to be resolved.
+ * @param resolved_path A buffer where the resolved path will be stored. The buffer
+ *                      should be large enough to hold the maximum possible path.
+ *                      The resolved path is null-terminated.
+ *
+ * @return Returns 0 if the symlink was successfully resolved, -1 if the symlink
+ *         is not found or if an error occurs during the resolution process.
+ *
+ * Note: The function does not handle nested symlinks. If the symlink points to
+ * another symlink, this function will not resolve it further. Also, the function
+ * scans the archive linearly, which may be inefficient for large archives.
+ */
+int resolve_symlink(int tar_fd, const char *symlink_path, char *resolved_path) {
+    tar_header_t header;
+    go_back_start(tar_fd);
+
+    while (next_header(tar_fd, &header) > 0) {
+        if (strcmp(header.name, symlink_path) == 0 && header.typeflag == SYMTYPE) {
+            // Found the symlink, copy its target to resolved_path
+            strncpy(resolved_path, header.linkname, MAX_PATH_SIZE);
+            resolved_path[MAX_PATH_SIZE - 1] = '\0'; // Ensure null-termination
+            return 0;
+        }
+    }
+
+    // Symlink not found
+    return -1;
+}
+
+/**
+ * Seeks to the start of the file data in the TAR archive.
+ *
+ * @param tar_fd A file descriptor pointing to the start of a valid tar archive file.
+ * @param header The header of the file whose data we want to seek to.
+ * @param offset Offset from the start of the file data.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+int seek_to_file_data(int tar_fd, const tar_header_t *header, size_t offset) {
+    char *end;
+    long size = strtol(header->size, &end, 10); // Convert size from ASCII to long
+    if (size == 0 || *end != '\0') {
+        // Invalid size in header or non-numeric characters in size field
+        return -1;
+    }
+
+    // Calculate the position of the start of the file data
+    off_t position = lseek(tar_fd, 0, SEEK_CUR);
+    if (position == (off_t)-1) {
+        // Error in getting current position
+        return -1;
+    }
+
+    // Each file's data is padded to fill a complete block in TAR format
+    size_t padded_size = ((size + BLOCKSIZE - 1) / BLOCKSIZE) * BLOCKSIZE;
+    off_t new_position = position + padded_size + BLOCKSIZE; // Add TAR_BLOCK_SIZE to skip over the header
+
+    // Adjust with the offset
+    new_position += offset;
+
+    // Seek to the calculated position
+    if (lseek(tar_fd, new_position, SEEK_SET) == (off_t)-1) {
+        // Error in seeking to new position
+        return -1;
+    }
+
+    return 0;
 }
 
 unsigned int calculate_tar_checksum(const struct posix_header *header) {
@@ -91,6 +193,8 @@ int get_header_type(int tar_fd, char *path, tar_header_t *header){
                     return 2;
                 case SYMTYPE:
                     return 3;
+                case REGTYPE:
+                    return 1;
                 default:
                     return 1;
             }
@@ -259,5 +363,45 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
  *
  */
 ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *len) {
+    tar_header_t header;
+    int type= get_header_type(tar_fd,path,&header);
+    if (type == 0 ) return -1;
+    if (type == 2) return -1;
+    char *end;
+    long size = strtol(header.size,&end,10);
+    if (size <= offset) return -2;
+    if (type == 3) { // Symlink
+        // Resolve symlink (you need to implement resolve_symlink)
+        char resolved_path[MAX_PATH_SIZE];
+        if (resolve_symlink(tar_fd, path, resolved_path) == -1) {
+            return -1; // Error resolving symlink
+        }
+        return read_file(tar_fd, resolved_path, offset, dest, len);
+    }
+
+
+
+    size_t to_read = size - offset;
+    if (*len < to_read) {
+        to_read = *len; // Adjust if dest buffer is smaller than the file size
+    }
+
+    // Seek to the start of the file data plus the offset
+    // (You need to implement seek_to_file_data)
+    if (seek_to_file_data(tar_fd, &header, offset) == -1) {
+        return -1; // Error seeking to file data
+    }
+
+    // Read file data into dest
+    ssize_t bytes_read = read(tar_fd, dest, to_read);
+    if (bytes_read == -1) {
+        // Handle read error
+        return -1;
+    }
+
+    *len = bytes_read; // Update the number of bytes actually read
+    return size > bytes_read + offset ? size - bytes_read - offset : 0; // Remaining bytes
+
+
     return 0;
 }

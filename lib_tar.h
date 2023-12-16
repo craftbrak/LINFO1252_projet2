@@ -34,6 +34,7 @@ typedef struct posix_header
 #define TVERSLEN 2
 
 #define BLOCKSIZE 512
+#define MAX_PATH_SIZE 100
 /* Values used in typeflag field.  */
 #define REGTYPE  '0'            /* regular file */
 #define AREGTYPE '\0'           /* regular file */
