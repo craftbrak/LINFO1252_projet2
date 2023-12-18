@@ -157,6 +157,43 @@ void test_is_symlink(void){
     CU_ASSERT_FALSE(is_dir(fd, "fichier1"));
 }
 
+void test_list_1(void){
+    size_t no_entries = 8;
+    char** entries = (char**) malloc(100*sizeof(char)*no_entries);
+    int err = list(fd, "dir1/", entries, &no_entries);
+    CU_ASSERT_NOT_EQUAL(err, 0);
+    CU_ASSERT_EQUAL(no_entries, 2);
+    CU_ASSERT_STRING_EQUAL(entries[0], "dir1/file4");
+    CU_ASSERT_STRING_EQUAL(entries[1], "dir1/link_to_dir4");
+    free(entries);
+}
+
+void test_list_2(void){
+    size_t no_entries = 8;
+    char** entries = (char**) malloc(100*sizeof(char)*no_entries);
+    CU_ASSERT_FALSE(list(fd, "dir1/file4", entries, &no_entries));
+    CU_ASSERT_EQUAL(no_entries, 0);
+    no_entries = 8;
+    CU_ASSERT_FALSE(list(fd, "link_to_link_to_file_5", entries, &no_entries));
+    CU_ASSERT_EQUAL(no_entries, 0);
+    no_entries = 8;
+    CU_ASSERT_FALSE(list(fd, "dir2/dir3/dir4/link_to_file5", entries, &no_entries));
+    CU_ASSERT_EQUAL(no_entries, 0);
+    free(entries);
+}
+
+void test_list_3(void){
+    size_t no_entries = 8;
+    char** entries = (char**) malloc(100*sizeof(char)*no_entries);
+    int err = list(fd, "dir1/link_to_dir4", entries, &no_entries);
+    CU_ASSERT_NOT_EQUAL(err, 0);
+    CU_ASSERT_EQUAL(no_entries, 2);
+    printf("%zu\n", no_entries);
+//    CU_ASSERT_STRING_EQUAL(entries[0], "dir4/file5");
+//    CU_ASSERT_STRING_EQUAL(entries[1], "dir4/link_to_file5");
+    free(entries);
+}
+
 void print_archive(void){
     tar_header_t header;
     go_back_start(fd);
@@ -226,20 +263,22 @@ int main(int argc, char **argv) {
         return CU_get_error();
     }
 
-//    // add a suite to the registry
-//    CU_pSuite pSuite3 = NULL;
-//    pSuite3 = CU_add_suite("Suite_list", init_suite, clean_suite);
-//    if (NULL == pSuite3) {
-//        CU_cleanup_registry();
-//        return CU_get_error();
-//    }
-//
-//    // add the tests to the suite
-//    if ((NULL == CU_add_test(pSuite3, "test of list function", test_list))){
-//        CU_cleanup_registry();
-//        return CU_get_error();
-//    }
-//
+    // add a suite to the registry
+    CU_pSuite pSuite3 = NULL;
+    pSuite3 = CU_add_suite("Suite_list", init_suite, clean_suite);
+    if (NULL == pSuite3) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+
+    // add the tests to the suite
+    if ((NULL == CU_add_test(pSuite3, "test 1 of list function (classical case)", test_list_1))||
+        (NULL == CU_add_test(pSuite3, "test 2 of list function (paths that don't link to directory)", test_list_2))||
+        (NULL == CU_add_test(pSuite3, "test 3 of list function (path is a symlink pointing to a directory)", test_list_3))){
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+
 //    // add a suite to the registry
 //    CU_pSuite pSuite4 = NULL;
 //    pSuite4 = CU_add_suite("Suite_read_file", init_suite, clean_suite);
