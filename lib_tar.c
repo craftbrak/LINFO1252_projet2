@@ -361,7 +361,7 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
 
     tar_header_t header;
     int type = get_header_type(tar_fd, path, &header);
-    char* directory = (char*) malloc(101* sizeof(char));
+    char* directory;
     size_t entries_length = *no_entries;
     *no_entries = 0;
     if (type <= 1) {
