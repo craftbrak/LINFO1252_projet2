@@ -96,6 +96,7 @@ void test_exists(void) {
 
     // Test case: Symlink exists
     CU_ASSERT_TRUE(exists(fd, "dir2/dir3/dir4/link_to_file5"));
+    CU_ASSERT_TRUE(exists(fd, "link_to_link_to_file_5"));
 
     // Test case: File does not exist
     CU_ASSERT_FALSE(exists(fd, "nonexistent_file.txt"));
@@ -121,7 +122,39 @@ void test_is_dir(void){
     CU_ASSERT_FALSE(is_dir(fd, "dir2/dir3/dir4/file5"));
 
     // Test case: Exists but is a symlink
-    CU_ASSERT_FALSE(is_dir(fd, "")); //TODO: creer un symlink dans l'archive pour pouvoir tester
+    CU_ASSERT_FALSE(is_dir(fd, "link_to_link_to_file_5"));
+}
+
+void test_is_file(void){
+    // Test case: File exists
+    CU_ASSERT_TRUE(is_file(fd, "fichier2"));
+    CU_ASSERT_TRUE(is_file(fd, "dir2/file3"));
+    CU_ASSERT_TRUE(is_file(fd, "fichier2"));
+
+    // Test case: File does not exist
+    CU_ASSERT_FALSE(is_file(fd, "dir1/nonexistent_file.txt"));
+
+    // Test case: Exists but is a directory
+    CU_ASSERT_FALSE(is_file(fd, "dir2/"));
+
+    // Test case: Exists but is a symlink
+    CU_ASSERT_FALSE(is_file(fd, "dir2/dir3/dir4/link_to_file5"));
+}
+
+void test_is_symlink(void){
+    // Test case: Symlink exists
+    CU_ASSERT_TRUE(is_symlink(fd, "link_to_link_to_file_5"));
+    CU_ASSERT_TRUE(is_symlink(fd, "dir1/link_to_dir4"));
+    CU_ASSERT_TRUE(is_symlink(fd, "dir2/dir3/brokenlink1"));
+
+    // Test case: Symlink does not exist
+    CU_ASSERT_FALSE(is_symlink(fd, "dir2/nonexistent_link"));
+
+    // Test case: Exists but is a directory
+    CU_ASSERT_FALSE(is_dir(fd, "dir2/dir3"));
+
+    // Test case: Exists but is a file
+    CU_ASSERT_FALSE(is_dir(fd, "fichier1"));
 }
 
 void print_archive(void){
@@ -185,9 +218,10 @@ int main(int argc, char **argv) {
     }
 
     // add the tests to the suite
-    // || (NULL == CU_add_test(pSuite2, "test of is_file function", test_is_file))||(NULL == CU_add_test(pSuite2, "test of is_symlink function", test_is_symlink))
     if ((NULL == CU_add_test(pSuite2, "test of exists function", test_exists))||
-        (NULL == CU_add_test(pSuite2, "test of is_dir function", test_is_dir))){
+        (NULL == CU_add_test(pSuite2, "test of is_dir function", test_is_dir))||
+        (NULL == CU_add_test(pSuite2, "test of is_file function", test_is_file))||
+        (NULL == CU_add_test(pSuite2, "test of is_symlink function", test_is_symlink))){
         CU_cleanup_registry();
         return CU_get_error();
     }
