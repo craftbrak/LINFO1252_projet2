@@ -49,6 +49,17 @@ void test_exists(int tar_fd) {
     result = exists(tar_fd, "fichier1");
     printf("Test file exists: %s\n", result ? "PASS" : "FAIL");
 
+    result = exists(tar_fd, "dir2/");
+    printf("Test file exists: %s\n", result ? "PASS" : "FAIL");
+
+    result = exists(tar_fd, "dir1/");
+    printf("Test file exists: %s\n", result ? "PASS" : "FAIL");
+
+    result = exists(tar_fd, "dir2/dir3/dir4/file5");
+    printf("Test file exists: %s\n", result ? "PASS" : "FAIL");
+
+    result = exists(tar_fd, "dir2/dir3/dir4/link_to_file5");
+    printf("Test file exists: %s\n", result ? "PASS" : "FAIL");
     // Test case: File does not exist
     result = exists(tar_fd, "nonexistent_file.txt");
     printf("Test file does not exist: %s\n", result ? "FAIL" : "PASS");
@@ -59,13 +70,13 @@ void test_check_archive(int fd){
 //TODO: Add test
 }
 void test_is_dir(int tar_fd){
-    int result = is_dir(tar_fd, "dir1");
+    int result = is_dir(tar_fd, "dir1/");
     printf("Test dir exists: %s\n", result ? "PASS" : "FAIL");
 
-    result = is_dir(tar_fd, "dir2");
+    result = is_dir(tar_fd, "dir2/");
     printf("Test dir exists: %s\n", result ? "PASS" : "FAIL");
 
-    result = is_dir(tar_fd, "dir1");
+    result = is_dir(tar_fd, "dir1/");
     printf("Test dir exists: %s\n", result ? "PASS" : "FAIL");
 
     // Test case: File does not exist
