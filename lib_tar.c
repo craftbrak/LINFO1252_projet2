@@ -19,7 +19,7 @@ void print_tar_header(const tar_header_t *header)
         printf("Header is NULL\n");
         return;
     }
-
+    printf("Next Header \n \n \n");
     printf("Name: %s\n", header->name);
     printf("Mode: %s\n", header->mode);
     printf("UID: %s\n", header->uid);
@@ -57,10 +57,25 @@ long next_header(int tar_fd, tar_header_t *header){
     if (bytesRead < sizeof(tar_header_t)){
         return -2;
     }
+
+
     char *end;
     long size = strtol(header->size,&end,10);
     long skipblock = (size+BLOCKSIZE -1)/ BLOCKSIZE;
     long err = lseek(tar_fd,skipblock*BLOCKSIZE,SEEK_CUR);
+    // Check if the header is completely zeroed out
+    int isEmpty = 1;
+    for (int i = 0; i < sizeof(tar_header_t); ++i) {
+        if (((unsigned char*)header)[i] != 0) {
+            isEmpty = 0;
+            break;
+        }
+    }
+
+    if (isEmpty) {
+        // If the header is empty, recursively call next_header to check the next one
+        return next_header(tar_fd, header);
+    }
     return err;
 }
 /**

@@ -66,6 +66,7 @@ void test_exists(int tar_fd) {
 
     // Add more tests as needed
 }
+
 void test_check_archive(int fd){
 //TODO: Add test
 }
@@ -84,6 +85,15 @@ void test_is_dir(int tar_fd){
     printf("Test dir does not exist: %s\n", result ? "FAIL" : "PASS");
 
 }
+
+void print_archive(int fd){
+    tar_header_t header;
+    go_back_start(fd);
+    while(next_header(fd, &header)>0){
+        print_tar_header(&header);
+    }
+}
+
 int main(int argc, char **argv) {
     if (argc < 2) {
         printf("Usage: %s tar_file\n", argv[0]);
@@ -99,6 +109,8 @@ int main(int argc, char **argv) {
     test_is_dir(fd);
     int ret = check_archive(fd);
     printf("check_archive returned %d\n", ret);
+
+    print_archive(fd);
 
     return 0;
 }
