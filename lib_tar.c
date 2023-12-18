@@ -249,6 +249,7 @@ int get_header_type(int tar_fd, char *path, tar_header_t *header){
 int check_archive(int tar_fd) {
     tar_header_t header;
     go_back_start(tar_fd);
+    int headers = 0;
     while(next_header(tar_fd, &header)>0){
         if (strncmp(header.magic,TMAGIC, TMAGLEN)!=0 ){
             return -1;
@@ -264,9 +265,9 @@ int check_archive(int tar_fd) {
             // Handle checksum mismatch
             return -3; // For example, as per your documentation
         }
+        headers++;
     }
-
-    return 1;
+    return headers;
 }
 
 /**

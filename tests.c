@@ -13,7 +13,7 @@
  */
 
 static int fd;
-
+static int fd_empty;
 void debug_dump(const uint8_t *bytes, size_t len) {
     for (int i = 0; i < len;) {
         printf("%04x:  ", (int) i);
@@ -37,8 +37,24 @@ int init_suite(void) {
     }
     return 0;
 }
-
+int init_suite_check_archive(){
+    fd = open("./tars/archive.tar", O_RDONLY);
+    if (fd == -1) {
+        perror("open(tar_file)");
+        return -1;
+    }
+    fd_empty = open("./tars/empty.tar", O_RDONLY);
+    if (fd_empty == -1) {
+        perror("open(tar_file)");
+        return -1;
+    }
+    return 0;
+}
 int clean_suite(void) {
+    return close(fd);
+}
+int clean_suite_check_archive(void) {
+    close(fd_empty);
     return close(fd);
 }
 
@@ -56,6 +72,16 @@ void test_is_file(void);
 void test_is_symlink(void);
 void test_list(void);
 void test_read_file(void);
+
+
+void test_check_archive(void){
+    int res = check_archive(fd);
+    printf("\n%d\n",res);
+    CU_ASSERT_EQUAL(res,13)
+    res = check_archive(fd_empty);
+    printf("\n%d\n",res);
+    CU_ASSERT_EQUAL(res,0)
+}
 
 void test_exists(void) {
     // Test case: File exists
@@ -82,9 +108,6 @@ void test_exists(void) {
     CU_ASSERT_FALSE(exists(fd, "dir1/link_to_nonexistent_file"));
 }
 
-void test_check_archive(void){
-//TODO: Add test
-}
 void test_is_dir(void){
     // Test case: Directory exists
     CU_ASSERT_TRUE(is_dir(fd, "dir1/"));
@@ -139,19 +162,19 @@ int main(int argc, char **argv) {
 //        return CU_get_error();
 //    }
 //
-//    // add a suite to the registry
-//    CU_pSuite pSuite1 = NULL;
-//    pSuite1 = CU_add_suite("Suite_check_archive", init_suite, clean_suite);
-//    if (NULL == pSuite1) {
-//        CU_cleanup_registry();
-//        return CU_get_error();
-//    }
-//
-//    // add the tests to the suite
-//    if ((NULL == CU_add_test(pSuite1, "test of check archive function", test_check_archive))){
-//        CU_cleanup_registry();
-//        return CU_get_error();
-//    }
+    // add a suite to the registry
+    CU_pSuite pSuite1 = NULL;
+    pSuite1 = CU_add_suite("Suite_check_archive", init_suite_check_archive, clean_suite_check_archive);
+    if (NULL == pSuite1) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+
+    // add the tests to the suite
+    if ((NULL == CU_add_test(pSuite1, "test of check archive function", test_check_archive))){
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
 
     // add a suite to the registry
     CU_pSuite pSuite2 = NULL;
