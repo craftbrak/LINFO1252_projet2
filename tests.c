@@ -55,7 +55,7 @@ void test_exists(int tar_fd) {
 
     // Add more tests as needed
 }
-void test_check_archive(){
+void test_check_archive(int fd){
 //TODO: Add test
 }
 void test_is_dir(int tar_fd){

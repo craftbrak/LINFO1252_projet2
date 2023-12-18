@@ -367,7 +367,7 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
     go_back_start(tar_fd);
     tar_header_t  header_sub;
     //for loop that get all the entries of the directory ??
-    while(*no_entries <= entries_length){
+    while(*no_entries < entries_length){
         long err = next_header(tar_fd, &header_sub);
         if (err == -2){
             break;
@@ -450,7 +450,4 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
 
     *len = bytes_read; // Update the number of bytes actually read
     return size > bytes_read + offset ? size - bytes_read - offset : 0; // Remaining bytes
-
-
-    return 0;
 }
