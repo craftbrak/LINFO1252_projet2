@@ -2,12 +2,17 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include "CUnit/Basic.h"
+#include "CUnit/Automated.h"
+#include "CUnit/CUnit.h"
 
 #include "lib_tar.h"
 
 /**
  * You are free to use this file to write tests for your implementation
  */
+
+static int fd;
 
 void debug_dump(const uint8_t *bytes, size_t len) {
     for (int i = 0; i < len;) {
@@ -23,70 +28,80 @@ void debug_dump(const uint8_t *bytes, size_t len) {
         printf("\n");
     }
 }
-void test_print_tar_header(int fd);
-void test_next_header(int fd);
-void test_go_back_start(int fd);
-void test_resolve_symlink(int fd);
-void test_seek_to_file_data(int fd);
-void test_calculate_tar_checksum(int fd);
-void test_get_header_type(int fd);
-void test_check_archive(int fd);
-void test_exists(int fd);
-void test_is_dir(int fd);
-void test_is_file(int fd);
-void test_is_symlink(int fd);
-void test_list(int fd);
-void test_read_file(int fd);
 
-void test_exists(int tar_fd) {
-    // Test case: File exists
-    int result = exists(tar_fd, "fichier1");
-    printf("Test file exists: %s\n", result ? "PASS" : "FAIL");
-
-    result = exists(tar_fd, "fichier2");
-    printf("Test file exists: %s\n", result ? "PASS" : "FAIL");
-
-    result = exists(tar_fd, "fichier1");
-    printf("Test file exists: %s\n", result ? "PASS" : "FAIL");
-
-    result = exists(tar_fd, "dir2/");
-    printf("Test file exists: %s\n", result ? "PASS" : "FAIL");
-
-    result = exists(tar_fd, "dir1/");
-    printf("Test file exists: %s\n", result ? "PASS" : "FAIL");
-
-    result = exists(tar_fd, "dir2/dir3/dir4/file5");
-    printf("Test file exists: %s\n", result ? "PASS" : "FAIL");
-
-    result = exists(tar_fd, "dir2/dir3/dir4/link_to_file5");
-    printf("Test file exists: %s\n", result ? "PASS" : "FAIL");
-    // Test case: File does not exist
-    result = exists(tar_fd, "nonexistent_file.txt");
-    printf("Test file does not exist: %s\n", result ? "FAIL" : "PASS");
-
-    // Add more tests as needed
+int init_suite(void) {
+    fd = open("./tars/archive.tar", O_RDONLY);
+    if (fd == -1) {
+        perror("open(tar_file)");
+        return -1;
+    }
+    return 0;
 }
 
-void test_check_archive(int fd){
+int clean_suite(void) {
+    return close(fd);
+}
+
+void test_print_tar_header(void);
+void test_next_header(void);
+void test_go_back_start(void);
+void test_resolve_symlink(void);
+void test_seek_to_file_data(void);
+void test_calculate_tar_checksum(void);
+void test_get_header_type(void);
+void test_check_archive(void);
+void test_exists(void);
+void test_is_dir(void);
+void test_is_file(void);
+void test_is_symlink(void);
+void test_list(void);
+void test_read_file(void);
+
+void test_exists(void) {
+    // Test case: File exists
+    CU_ASSERT_TRUE(exists(fd, "fichier1"));
+    CU_ASSERT_TRUE(exists(fd, "fichier2"));
+    CU_ASSERT_TRUE(exists(fd, "fichier1"));
+    CU_ASSERT_TRUE(exists(fd, "dir2/dir3/dir4/file5"));
+
+    // Test case: Directory exists
+    CU_ASSERT_TRUE(exists(fd, "dir2/"));
+    CU_ASSERT_TRUE(exists(fd, "dir2/dir3/"));
+
+    // Test case: Symlink exists
+    CU_ASSERT_TRUE(exists(fd, "dir2/dir3/dir4/link_to_file5"));
+
+    // Test case: File does not exist
+    CU_ASSERT_FALSE(exists(fd, "nonexistent_file.txt"));
+
+    //Test case: Directory does not exist
+    CU_ASSERT_FALSE(exists(fd, "nonexistent_directory/"));
+    CU_ASSERT_FALSE(exists(fd, "dir1/nonexistent_directory/"));
+
+    // Test case: Symlink does not exist
+    CU_ASSERT_FALSE(exists(fd, "dir1/link_to_nonexistent_file"));
+}
+
+void test_check_archive(void){
 //TODO: Add test
 }
-void test_is_dir(int tar_fd){
-    int result = is_dir(tar_fd, "dir1/");
-    printf("Test dir exists: %s\n", result ? "PASS" : "FAIL");
+void test_is_dir(void){
+    // Test case: Directory exists
+    CU_ASSERT_TRUE(is_dir(fd, "dir1/"));
+    CU_ASSERT_TRUE(is_dir(fd, "dir2/"));
+    CU_ASSERT_TRUE(is_dir(fd, "dir1/"));
 
-    result = is_dir(tar_fd, "dir2/");
-    printf("Test dir exists: %s\n", result ? "PASS" : "FAIL");
+    // Test case: Directory does not exist
+    CU_ASSERT_FALSE(is_dir(fd, "nonexistent_dir/"));
 
-    result = is_dir(tar_fd, "dir1/");
-    printf("Test dir exists: %s\n", result ? "PASS" : "FAIL");
+    // Test case: Exists but is a file
+    CU_ASSERT_FALSE(is_dir(fd, "dir2/dir3/dir4/file5"));
 
-    // Test case: File does not exist
-    result = is_dir(tar_fd, "nonexistent_file.txt");
-    printf("Test dir does not exist: %s\n", result ? "FAIL" : "PASS");
-
+    // Test case: Exists but is a symlink
+    CU_ASSERT_FALSE(is_dir(fd, "")); //TODO: creer un symlink dans l'archive pour pouvoir tester
 }
 
-void print_archive(int fd){
+void print_archive(void){
     tar_header_t header;
     go_back_start(fd);
     while(next_header(fd, &header)>0){
@@ -95,22 +110,108 @@ void print_archive(int fd){
 }
 
 int main(int argc, char **argv) {
-    if (argc < 2) {
-        printf("Usage: %s tar_file\n", argv[0]);
-        return -1;
+    // plus utile si on utilise toujours archive.tar
+//    if (argc < 2) {
+//        printf("Usage: %s tar_file\n", argv[0]);
+//        return -1;
+//    }
+
+    //  initialize the CUnit test registry
+    if (CUE_SUCCESS != CU_initialize_registry())
+        return CU_get_error();
+
+//    // add a suite to the registry
+//    CU_pSuite pSuite0 = NULL;
+//    pSuite0 = CU_add_suite("Suite_helper_functions", init_suite, clean_suite);
+//    if (NULL == pSuite0) {
+//        CU_cleanup_registry();
+//        return CU_get_error();
+//    }
+//
+//    // add the tests to the suite
+//    if ((NULL == CU_add_test(pSuite0, "test of next_header function", test_next_header))||
+//        (NULL == CU_add_test(pSuite0, "test of go_back_start function", test_go_back_start))||
+//        (NULL == CU_add_test(pSuite0, "test of resolve_symlink function", test_resolve_symlink))||
+//        (NULL == CU_add_test(pSuite0, "test of seek_to_file_data function", test_seek_to_file_data))||
+//        (NULL == CU_add_test(pSuite0, "test of calculate_tar_checksum function", test_calculate_tar_checksum))||
+//        (NULL == CU_add_test(pSuite0, "test of aget_header_type function", test_get_header_type))){
+//        CU_cleanup_registry();
+//        return CU_get_error();
+//    }
+//
+//    // add a suite to the registry
+//    CU_pSuite pSuite1 = NULL;
+//    pSuite1 = CU_add_suite("Suite_check_archive", init_suite, clean_suite);
+//    if (NULL == pSuite1) {
+//        CU_cleanup_registry();
+//        return CU_get_error();
+//    }
+//
+//    // add the tests to the suite
+//    if ((NULL == CU_add_test(pSuite1, "test of check archive function", test_check_archive))){
+//        CU_cleanup_registry();
+//        return CU_get_error();
+//    }
+
+    // add a suite to the registry
+    CU_pSuite pSuite2 = NULL;
+    pSuite2 = CU_add_suite("Suite_get_type_and_existence", init_suite, clean_suite);
+    if (NULL == pSuite2) {
+        CU_cleanup_registry();
+        return CU_get_error();
     }
 
-    int fd = open(argv[1] , O_RDONLY);
-    if (fd == -1) {
-        perror("open(tar_file)");
-        return -1;
+    // add the tests to the suite
+    // || (NULL == CU_add_test(pSuite2, "test of is_file function", test_is_file))||(NULL == CU_add_test(pSuite2, "test of is_symlink function", test_is_symlink))
+    if ((NULL == CU_add_test(pSuite2, "test of exists function", test_exists))||
+        (NULL == CU_add_test(pSuite2, "test of is_dir function", test_is_dir))){
+        CU_cleanup_registry();
+        return CU_get_error();
     }
-    test_exists(fd);
-    test_is_dir(fd);
-    int ret = check_archive(fd);
-    printf("check_archive returned %d\n", ret);
 
-    print_archive(fd);
+//    // add a suite to the registry
+//    CU_pSuite pSuite3 = NULL;
+//    pSuite3 = CU_add_suite("Suite_list", init_suite, clean_suite);
+//    if (NULL == pSuite3) {
+//        CU_cleanup_registry();
+//        return CU_get_error();
+//    }
+//
+//    // add the tests to the suite
+//    if ((NULL == CU_add_test(pSuite3, "test of list function", test_list))){
+//        CU_cleanup_registry();
+//        return CU_get_error();
+//    }
+//
+//    // add a suite to the registry
+//    CU_pSuite pSuite4 = NULL;
+//    pSuite4 = CU_add_suite("Suite_read_file", init_suite, clean_suite);
+//    if (NULL == pSuite4) {
+//        CU_cleanup_registry();
+//        return CU_get_error();
+//    }
+//
+//    // add the tests to the suite
+//    if ((NULL == CU_add_test(pSuite4, "test of read file function", test_read_file))){
+//        CU_cleanup_registry();
+//        return CU_get_error();
+//    }
 
-    return 0;
+    // Run all tests using the CUnit Basic interface
+    CU_basic_set_mode(CU_BRM_VERBOSE);
+    CU_basic_run_tests();
+    CU_automated_run_tests();
+    CU_basic_show_failures(CU_get_failure_list()); //permet d'afficher le rapport
+    CU_cleanup_registry();
+
+    if (CU_get_number_of_tests_failed() == 0) {
+        return 0;
+    } else {
+        return 1;
+    }
+//
+//    test_exists(fd);
+//    test_is_dir(fd);
+//    int ret = check_archive(fd);
+//    printf("check_archive returned %d\n", ret);
 }
