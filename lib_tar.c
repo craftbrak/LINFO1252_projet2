@@ -359,8 +359,8 @@ int is_symlink(int tar_fd, char *path) {
  */
 int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
     // ATTENTION avant toute chose faire le check que le chemin est bien vers un dir (si chemin vers un fichier/symlink qui pointe vers un fichier: return 0)
-    // si le repertoir a lister est un symlink: le nom du repertoire a inclure est celui du chemin reel et pas celui du simlink (ex sym_a->a, inclure a/nom et pas sym_a/nom)
-    // lire un simlink: trouver le nom dans le champs linkname du header du symlink (on ne resoud pas les symlinks a l'interieur du dossier)
+    // si le repertoir a lister est un symlink: le nom du repertoire a inclure est celui du chemin reel et pas celui du symlink (ex sym_a->a, inclure a/nom et pas sym_a/nom)
+    // lire un symlink: trouver le nom dans le champs linkname du header du symlink (on ne resoud pas les symlinks a l'interieur du dossier)
     // pas oublier d'update le buffer entries (avec le chemin complet) ET le size_t no_entries
     // -> si no_entries est plus petit que le nombre d'entries du directory, lister les no_entries premiers elements (dans l'ordre des headers)
     // attention a update no_entries dans tous les cas (pas oublier de le mettre a 0 quand on retourne 0)
@@ -368,43 +368,41 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
 
     tar_header_t header;
     int type = get_header_type(tar_fd, path, &header);
-    char* directory;
     size_t entries_length = *no_entries;
     *no_entries = 0;
+    printf("path: %s\t header.name: %s\n", path, header.name);
+    int path_len = strlen(header.name);
     if (type <= 1) {
         return 0;
-    } else if (type == 3) {
+    } else if (type == 3 || type == 4) {
         //we have a symlink
-        //check if the symlink points to a directory or a file...
-        tar_header_t header_bis;
-        directory = header.linkname;
-        if (get_header_type(tar_fd, directory, &header_bis)<= 2) {
-            return 0;
-        }
-        strcat(directory, "/");
-    } else {
-        directory = header.name;
+        //check if the symlink points to a directory or a file recursively
+        strcat(header.linkname, "/");
+        return list(tar_fd, header.linkname, entries, &entries_length);
     }
+    // We should only come here if the path is to a directory
 
     go_back_start(tar_fd);
     tar_header_t  header_sub;
-    //for loop that get all the entries of the directory ??
+    //for loop that get all the entries of the directory
     while(*no_entries < entries_length){
         long err = next_header(tar_fd, &header_sub);
         if (err == -2){
             break;
         } else if (err == -1){
             printf("Error from lseek");
-            return -1;
+            return 0;
         }
 
-        if (strncmp(header_sub.name, directory, strlen(directory))==0){
-            const char* remaining_path = header_sub.name + strlen(directory);
-            if (strchr(remaining_path, '/')== NULL){
+        printf("header_sub name: %s\n", header_sub.name);
+        if (strncmp(header_sub.name, header.name, path_len)==0 && strlen(header_sub.name) != path_len){
+            const char* sub_entry = header_sub.name + path_len;
+            printf("GOT INTO THE LOOP, remaining path: %s\n", sub_entry);
+            if (strchr(sub_entry, '/')== NULL || strchr(sub_entry, '/')[1] == '\0'){
                 entries[*no_entries] = strdup(header_sub.name);
                 if (entries[*no_entries] == NULL){
                     printf("Error of strdup");
-                    return 0;
+                    return -1;
                 }
                 (*no_entries)++;
             }
