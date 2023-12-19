@@ -444,23 +444,14 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
         return read_file(tar_fd, resolved_path, offset, dest, len);
     }
 
-
-
     size_t to_read = size - offset;
     if (*len < to_read) {
         to_read = *len; // Adjust if dest buffer is smaller than the file size
     }
 
-    // Seek to the start of the file data plus the offset
-    // (You need to implement seek_to_file_data)
-    if (seek_to_file_data(tar_fd, &header, offset) == -1) {
-        return -1; // Error seeking to file data
-    }
-
     // Read file data into dest
     ssize_t bytes_read = read(tar_fd, dest, to_read);
     if (bytes_read == -1) {
-        // Handle read error
         return -1;
     }
 
