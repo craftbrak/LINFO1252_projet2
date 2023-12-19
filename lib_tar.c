@@ -449,7 +449,7 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
     if (type == 0 ) { *len = 0;return -1; }
     if (type == 2) { *len = 0;return -1; }
     long size = TAR_INT(header.size);
-    printf("type of file : %d\n ",(int )type);
+//    printf("type of file : %d\n ",(int )type);
     if (type == 3 || type == 4) { // Symlink
         // Resolve symlink (you need to implement resolve_symlink)
         char resolved_path[MAX_PATH_SIZE];
