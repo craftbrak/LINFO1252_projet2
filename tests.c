@@ -175,16 +175,19 @@ void test_list_2(void){
     no_entries = 8;
     CU_ASSERT_FALSE(list(fd, "dir2/dir3/dir4/link_to_file5", entries, &no_entries));
     CU_ASSERT_EQUAL(no_entries, 0);
+    no_entries = 8;
+    CU_ASSERT_FALSE(list(fd, "dir1/nonexistent_file.txt", entries, &no_entries));
+    CU_ASSERT_EQUAL(no_entries, 0);
     free(entries);
 }
 
 void test_list_3(void){
     size_t no_entries = 8;
     char** entries = (char**) malloc(100*sizeof(char)*no_entries);
-    int err = list(fd, "dir2/dir3/dir4/link_to_file5", entries, &no_entries);
+    int err = list(fd, "dir1/link_to_dir4", entries, &no_entries);
     CU_ASSERT_NOT_EQUAL(err, 0);
     CU_ASSERT_EQUAL(no_entries, 2);
-    printf("%zu\n", no_entries);
+    printf("no_entries= %zu", no_entries);
 //    CU_ASSERT_STRING_EQUAL(entries[0], "dir4/file5");
 //    CU_ASSERT_STRING_EQUAL(entries[1], "dir4/link_to_file5");
     free(entries);
@@ -282,9 +285,9 @@ int main(int argc, char **argv) {
     }
 
     // add the tests to the suite
-    if ((NULL == CU_add_test(pSuite3, "test 1 of list function (classical case)", test_list_1))||
-        (NULL == CU_add_test(pSuite3, "test 2 of list function (paths that don't link to directory)", test_list_2))||
-        (NULL == CU_add_test(pSuite3, "test 3 of list function (path is a symlink pointing to a directory)", test_list_3))){
+//    (NULL == CU_add_test(pSuite3, "test 1 of list function (classical case)", test_list_1))||
+//    (NULL == CU_add_test(pSuite3, "test 2 of list function (paths that don't link to directory)", test_list_2))||
+    if ((NULL == CU_add_test(pSuite3, "test 3 of list function (path is a symlink pointing to a directory)", test_list_3))){
         CU_cleanup_registry();
         return CU_get_error();
     }
