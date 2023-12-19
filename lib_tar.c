@@ -57,10 +57,7 @@ long next_header(int tar_fd, tar_header_t *header){
     if (bytesRead < sizeof(tar_header_t)){
         return -2;
     }
-
-
-    char *end;
-    long size = strtol(header->size,&end,10);
+    long size = TAR_INT(header->size);
     long skipblock = (size+BLOCKSIZE -1)/ BLOCKSIZE;
     long err = lseek(tar_fd,skipblock*BLOCKSIZE,SEEK_CUR);
     // Check if the header is completely zeroed out
@@ -135,9 +132,8 @@ int resolve_symlink(int tar_fd, const char *symlink_path, char *resolved_path) {
  * @return 0 on success, -1 on failure.
  */
 int seek_to_file_data(int tar_fd, const tar_header_t *header, size_t offset) {
-    char *end;
-    long size = strtol(header->size, &end, 10); // Convert size from ASCII to long
-    if (size == 0 || *end != '\0') {
+    long size = TAR_INT(header->size); // Convert size from ASCII to long
+    if (size == 0) {
         // Invalid size in header or non-numeric characters in size field
         return -1;
     }
@@ -221,8 +217,8 @@ int get_header_type(int tar_fd, char *path, tar_header_t *header){
                     return 2;
                 case SYMTYPE:
                     return 3;
-                case REGTYPE:
-                    return 1;
+                case LNKTYPE:
+                    return 4;
                 default:
                     return 1;
             }
@@ -260,7 +256,7 @@ int check_archive(int tar_fd) {
         unsigned int calculated_checksum = calculate_tar_checksum(&header);
 
         // Convert the chksum field to an integer for comparison
-        unsigned int stored_checksum = (unsigned int)strtol(header.chksum,NULL,8);
+        unsigned int stored_checksum = (unsigned int)TAR_INT(header.chksum);
         if (calculated_checksum != stored_checksum) {
             // Handle checksum mismatch
             return -3; // For example, as per your documentation
@@ -432,10 +428,9 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
     int type= get_header_type(tar_fd,path,&header);
     if (type == 0 ) return -1;
     if (type == 2) return -1;
-    char *end;
-    long size = strtol(header.size,&end,10);
+    long size = TAR_INT(header.size);
     if (size <= offset) return -2;
-    if (type == 3) { // Symlink
+    if (type == 3 || type == 4) { // Symlink
         // Resolve symlink (you need to implement resolve_symlink)
         char resolved_path[MAX_PATH_SIZE];
         if (resolve_symlink(tar_fd, path, resolved_path) == -1) {
@@ -448,7 +443,8 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
     if (*len < to_read) {
         to_read = *len; // Adjust if dest buffer is smaller than the file size
     }
-
+    //seek to offset
+    lseek(tar_fd, offset, SEEK_CUR);
     // Read file data into dest
     ssize_t bytes_read = read(tar_fd, dest, to_read);
     if (bytes_read == -1) {

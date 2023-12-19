@@ -75,12 +75,8 @@ void test_read_file(void);
 
 
 void test_check_archive(void){
-    int res = check_archive(fd);
-    printf("\n%d\n",res);
-    CU_ASSERT_EQUAL(res,13)
-    res = check_archive(fd_empty);
-    printf("\n%d\n",res);
-    CU_ASSERT_EQUAL(res,0)
+    CU_ASSERT_EQUAL(check_archive(fd),13)
+    CU_ASSERT_EQUAL(check_archive(fd_empty),0)
 }
 
 void test_exists(void) {
@@ -194,6 +190,13 @@ void test_list_3(void){
     free(entries);
 }
 
+void test_read_file(void){
+    size_t len = 1000;
+    uint8_t res[1000];
+    CU_ASSERT_EQUAL(read_file(fd,"fichier1",-2,res,&len),-2)
+    CU_ASSERT_EQUAL(read_file(fd,"fichier1",0,res,&len),1)
+}
+
 void print_archive(void){
     tar_header_t header;
     go_back_start(fd);
@@ -279,19 +282,19 @@ int main(int argc, char **argv) {
         return CU_get_error();
     }
 
-//    // add a suite to the registry
-//    CU_pSuite pSuite4 = NULL;
-//    pSuite4 = CU_add_suite("Suite_read_file", init_suite, clean_suite);
-//    if (NULL == pSuite4) {
-//        CU_cleanup_registry();
-//        return CU_get_error();
-//    }
-//
-//    // add the tests to the suite
-//    if ((NULL == CU_add_test(pSuite4, "test of read file function", test_read_file))){
-//        CU_cleanup_registry();
-//        return CU_get_error();
-//    }
+    // add a suite to the registry
+    CU_pSuite pSuite4 = NULL;
+    pSuite4 = CU_add_suite("Suite_read_file", init_suite, clean_suite);
+    if (NULL == pSuite4) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+
+    // add the tests to the suite
+    if ((NULL == CU_add_test(pSuite4, "test of read file function", test_read_file))){
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
 
     // Run all tests using the CUnit Basic interface
     CU_basic_set_mode(CU_BRM_VERBOSE);
