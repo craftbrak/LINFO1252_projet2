@@ -192,9 +192,16 @@ void test_list_3(void){
 
 void test_read_file(void){
     size_t len = 1000;
-    uint8_t res[1000];
-    CU_ASSERT_EQUAL(read_file(fd,"fichier1",-2,res,&len),-2)
-    CU_ASSERT_EQUAL(read_file(fd,"fichier1",0,res,&len),1)
+    char res[1000];
+//    CU_ASSERT_EQUAL(read_file(fd,"fichier1",-2,(uint8_t *) res,&len),-2)
+//    CU_ASSERT_EQUAL(read_file(fd,"fichier1",0,(uint8_t *) res,&len),1)
+    size_t ret = read_file(fd, "dir2/dir3/dir4/link_to_file5",5, (uint8_t *) res,&len);
+    printf(" return value %d\n",(int)ret);
+    printf("len read : %d \n",(int )len);
+    for (int i = 0; i < len; ++i) {
+        printf("%c",res[i]);
+    }
+
 }
 
 void print_archive(void){

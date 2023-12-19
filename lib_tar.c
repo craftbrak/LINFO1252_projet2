@@ -161,6 +161,16 @@ int seek_to_file_data(int tar_fd, const tar_header_t *header, size_t offset) {
     return 0;
 }
 
+off_t get_offset_from_start(int tar_fd, char * path){
+    lseek(tar_fd, 0, SEEK_SET);
+    tar_header_t tar_header;
+    for (off_t offset = 0; read(tar_fd, &tar_header, sizeof(tar_header_t)) > 0; offset++) {
+        if (strcmp(tar_header.name, path) == 0) { return (off_t) sizeof(tar_header_t) * offset;}
+    }
+
+    return -1;
+}
+
 /**
  * Calculates the checksum for a TAR header block.
  *
@@ -405,6 +415,13 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
     return 1;
 }
 
+
+size_t get_read_length(size_t len_buf, size_t size_file, size_t offset) {
+    if (len_buf < size_file - offset) return len_buf;
+    return size_file - offset;
+}
+
+
 /**
  * Reads a file at a given path in the archive.
  *
@@ -424,33 +441,35 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
  *
  */
 ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *len) {
+    go_back_start(tar_fd);
+//    printf("Reading header for %s\n",path);
     tar_header_t header;
     int type= get_header_type(tar_fd,path,&header);
-    if (type == 0 ) return -1;
-    if (type == 2) return -1;
+    print_tar_header(&header);
+    if (type == 0 ) { *len = 0;return -1; }
+    if (type == 2) { *len = 0;return -1; }
     long size = TAR_INT(header.size);
-    if (size <= offset) return -2;
+    printf("type of file : %d\n ",(int )type);
     if (type == 3 || type == 4) { // Symlink
         // Resolve symlink (you need to implement resolve_symlink)
         char resolved_path[MAX_PATH_SIZE];
+        printf("\n path :%s \n",resolved_path);
         if (resolve_symlink(tar_fd, path, resolved_path) == -1) {
+            *len = 0;
             return -1; // Error resolving symlink
         }
         return read_file(tar_fd, resolved_path, offset, dest, len);
     }
-
-    size_t to_read = size - offset;
-    if (*len < to_read) {
-        to_read = *len; // Adjust if dest buffer is smaller than the file size
-    }
-    //seek to offset
-    lseek(tar_fd, offset, SEEK_CUR);
-    // Read file data into dest
+    if (size <= offset) return -2;
+    size_t to_read = get_read_length(*len, size, offset);
+    printf("To read : %d\n", (int)to_read);
+    lseek(tar_fd, get_offset_from_start(tar_fd,path)+512, SEEK_SET);
+    lseek(tar_fd, (off_t) offset, SEEK_CUR);
     ssize_t bytes_read = read(tar_fd, dest, to_read);
     if (bytes_read == -1) {
+        *len = 0;
         return -1;
     }
-
-    *len = bytes_read; // Update the number of bytes actually read
-    return size > bytes_read + offset ? size - bytes_read - offset : 0; // Remaining bytes
+    *len = bytes_read;
+    return size > bytes_read + offset ? (int)(size - bytes_read - offset) : 0;
 }
