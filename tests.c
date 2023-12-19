@@ -181,7 +181,7 @@ void test_list_2(void){
 void test_list_3(void){
     size_t no_entries = 8;
     char** entries = (char**) malloc(100*sizeof(char)*no_entries);
-    int err = list(fd, "dir1/link_to_dir4", entries, &no_entries);
+    int err = list(fd, "dir2/dir3/dir4/link_to_file5", entries, &no_entries);
     CU_ASSERT_NOT_EQUAL(err, 0);
     CU_ASSERT_EQUAL(no_entries, 2);
     printf("%zu\n", no_entries);
@@ -193,14 +193,14 @@ void test_list_3(void){
 void test_read_file(void){
     size_t len = 1000;
     char res[1000];
-//    CU_ASSERT_EQUAL(read_file(fd,"fichier1",-2,(uint8_t *) res,&len),-2)
-//    CU_ASSERT_EQUAL(read_file(fd,"fichier1",0,(uint8_t *) res,&len),1)
-    size_t ret = read_file(fd, "dir2/dir3/dir4/link_to_file5",5, (uint8_t *) res,&len);
-    printf(" return value %d\n",(int)ret);
-    printf("len read : %d \n",(int )len);
-    for (int i = 0; i < len; ++i) {
-        printf("%c",res[i]);
-    }
+    CU_ASSERT_EQUAL(read_file(fd,"fichier1",-2,(uint8_t *) res,&len),-2)
+    CU_ASSERT_EQUAL(read_file(fd,"fichier1",0,(uint8_t *) res,&len),1)
+//    size_t ret = read_file(fd, "dir2/dir3/dir4/link_to_file5",5, (uint8_t *) res,&len);
+//    printf(" return value %d\n",(int)ret);
+//    printf("len read : %d \n",(int )len);
+//    for (int i = 0; i < len; ++i) {
+//        printf("%c",res[i]);
+//    }
 
 }
 

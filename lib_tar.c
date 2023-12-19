@@ -445,7 +445,7 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
 //    printf("Reading header for %s\n",path);
     tar_header_t header;
     int type= get_header_type(tar_fd,path,&header);
-    print_tar_header(&header);
+//    print_tar_header(&header);
     if (type == 0 ) { *len = 0;return -1; }
     if (type == 2) { *len = 0;return -1; }
     long size = TAR_INT(header.size);
@@ -453,7 +453,7 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
     if (type == 3 || type == 4) { // Symlink
         // Resolve symlink (you need to implement resolve_symlink)
         char resolved_path[MAX_PATH_SIZE];
-        printf("\n path :%s \n",resolved_path);
+//        printf("\n path :%s \n",resolved_path);
         if (resolve_symlink(tar_fd, path, resolved_path) == -1) {
             *len = 0;
             return -1; // Error resolving symlink
@@ -462,7 +462,7 @@ ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *
     }
     if (size <= offset) return -2;
     size_t to_read = get_read_length(*len, size, offset);
-    printf("To read : %d\n", (int)to_read);
+//    printf("To read : %d\n", (int)to_read);
     lseek(tar_fd, get_offset_from_start(tar_fd,path)+512, SEEK_SET);
     lseek(tar_fd, (off_t) offset, SEEK_CUR);
     ssize_t bytes_read = read(tar_fd, dest, to_read);
